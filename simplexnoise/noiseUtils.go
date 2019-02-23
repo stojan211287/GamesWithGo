@@ -17,6 +17,23 @@ func rescaleAndDraw(rawNoise []float32, minNoise, maxNoise float32, colorGradien
 	}
 }
 
+func turbulenceNoise(x, y, frequency, lacunarity, gain float32, octaves int) float32 {
+	var sum float32
+
+	amplitude := float32(1.0)
+
+	for i := 0; i < octaves; i++ {
+		f := snoise2(x*frequency, y*frequency) * amplitude
+
+		if f < 0.0 {
+			f = -1.0 * f
+		}
+
+		sum += f
+	}
+	return sum
+}
+
 func fractionalBrownianMotion(x, y, frequency, lacunarity, gain float32, octaves int) float32 {
 
 	var sum float32
@@ -45,7 +62,7 @@ func makeNoise(pixels []byte, frequency, gain, lacunarity float32, octaves int) 
 
 	for y := 0; y < windowWidth; y++ {
 		for x := 0; x < windowHeight; x++ {
-			noise[i] = fractionalBrownianMotion(float32(x), float32(y), frequency, lacunarity, gain, octaves)
+			noise[i] = turbulenceNoise(float32(x), float32(y), frequency, lacunarity, gain, octaves)
 			if i == 0 {
 				minNoise = noise[i]
 				maxNoise = noise[i]

@@ -20,9 +20,9 @@ func main() {
 
 	multiplier := float32(1.0)
 
-	frequency := float32(0.005)
+	frequency := float32(0.015)
 	gain := float32(0.2)
-	lacunarity := float32(3)
+	lacunarity := float32(10)
 	octaves := 3
 
 	// SETUP EVENT LOOP
