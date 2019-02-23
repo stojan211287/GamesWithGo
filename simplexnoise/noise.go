@@ -20,9 +20,9 @@ func main() {
 
 	multiplier := float32(1.0)
 
-	frequency := float32(0.01)
-	gain := float32(2)
-	lacunarity := float32(2)
+	frequency := float32(0.005)
+	gain := float32(0.2)
+	lacunarity := float32(3)
 	octaves := 3
 
 	// SETUP EVENT LOOP
@@ -45,13 +45,13 @@ func main() {
 			multiplier *= -1.0
 		}
 		if frequencyKeyPressed {
-			frequency = frequency + 0.5*multiplier
+			frequency = frequency + 0.001*multiplier
 		}
 		if octaveKeyPressed {
 			octaves = octaves + int(1*multiplier)
 		}
 		if gainKeyPressed {
-			gain = gain + 0.5*multiplier
+			gain = gain + 0.1*multiplier
 		}
 		if lacunarityKeyPressed {
 			lacunarity = lacunarity + 0.5*multiplier
