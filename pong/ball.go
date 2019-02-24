@@ -4,8 +4,8 @@ type ball struct {
 	// THIS IS SIMPLE INHERITANCE OF STRUCTS IN GO - NOW YOU CAN ACCESS ball.x INSTEAD OF ball.position.x
 	position
 	radius int
-	xv     int
-	yv     int
+	xv     float32
+	yv     float32
 	color  color
 }
 
@@ -19,39 +19,43 @@ func (ball *ball) draw(pixels []byte) {
 	}
 }
 
-func (ball *ball) update(leftPaddle *paddle, rightPaddle *paddle) {
+func (ball *ball) update(leftPaddle *paddle, rightPaddle *paddle, elapsedTime float32) {
 
-	ball.x += ball.xv
-	ball.y += ball.yv
+	ball.x += int(ball.xv * elapsedTime)
+	ball.y += int(ball.yv * elapsedTime)
 
 	switch ball.hitsScreen() {
 	case left:
+		rightPaddle.upScore()
 		ball.newKickoff()
 	case right:
+		leftPaddle.upScore()
 		ball.newKickoff()
 	case top:
-		ball.reverseY()
+		ball.bounceBallY()
 	case bottom:
-		ball.reverseY()
+		ball.bounceBallY()
 	}
 
-	switch leftPaddle.hitByBall(ball) {
-	case ballHitsPaddle:
-		ball.reverseX()
+	if leftPaddle.hitByBall(ball) {
+		ball.bounceBallX()
 	}
 
-	switch rightPaddle.hitByBall(ball) {
-	case ballHitsPaddle:
-		ball.reverseX()
+	if rightPaddle.hitByBall(ball) {
+		ball.bounceBallX()
 	}
 }
 
-func (ball *ball) reverseX() {
-	ball.xv = -ball.xv
+func (ball *ball) bounceBallX() {
+	ball.xv = -1.0 * ball.xv
+	// HACK TO ESCAPE SEE-SAW COLLISIONS
+	ball.x += int(ball.xv) * ball.radius / 2
 }
 
-func (ball *ball) reverseY() {
-	ball.yv = -ball.yv
+func (ball *ball) bounceBallY() {
+	ball.yv = -1.0 * ball.yv
+	// HACK TO ESCAPE SEE-SAW COLLISIONS
+	ball.y += int(ball.yv) * ball.radius / 2
 }
 
 func (ball *ball) newKickoff() {

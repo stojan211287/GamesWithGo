@@ -1,48 +1,41 @@
 package main
 
 import (
+	"time"
+
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 func main() {
 
+	// INIT VARS
 	colorWhite := color{255, 255, 255}
 
-	// INIT THE EVENT SYSTEM
-	err := sdl.Init(sdl.INIT_EVERYTHING)
-	checkError(err)
+	var state gameState = paused
+
+	var frameStart time.Time
+	var elapsedTime float32
+
+	window, renderer, texture := setupSDL()
 	defer sdl.Quit()
-
-	// MAKE WINDOW
-	window, err := sdl.CreateWindow("Testin SDL2, FINALLY!", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
-		int32(winHeight), int32(winWidth), sdl.WINDOW_SHOWN)
-
-	checkError(err)
 	defer window.Destroy()
-
-	// MAKE RENDERER
-	renderer, err := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
-	checkError(err)
 	defer renderer.Destroy()
-
-	// MAKE TEXTURE - FROM RENDERER
-	texture, err := renderer.CreateTexture(sdl.PIXELFORMAT_ABGR8888, sdl.TEXTUREACCESS_STREAMING, int32(winWidth), int32(winHeight))
-	checkError(err)
 	defer texture.Destroy()
 
 	// MAKE PIXELS - AN ARRAY OF BYTES - THIS IS LIKE A malloc IN C
 	pixels := make([]byte, noOfPixels)
 
-	playerPaddle := paddle{position{paddleStartOffset, paddleStartY}, 20, 100, 0, 0, colorWhite}
-	ball := ball{position{ballStartX, ballStartY}, ballSize, 1, 2, colorWhite}
+	playerPaddle := paddle{position{paddleStartOffset, paddleStartY}, paddleXSize, paddleYSize, paddleStartSpeed, paddleStartScore, colorWhite}
+	ball := ball{position{ballStartX, ballStartY}, ballSize, ballStartXSpeed, ballStartYSpeed, colorWhite}
 
-	aiPaddle := paddle{position{winWidth - paddleStartOffset, paddleStartY}, 20, 100, 0, 0, colorWhite}
+	aiPaddle := paddle{position{winWidth - paddleStartOffset, paddleStartY}, paddleXSize, paddleYSize, paddleStartSpeed, paddleStartScore, colorWhite}
 
 	// KEYBOARD STATE ARRAY
 	keyState := sdl.GetKeyboardState()
 
 	// INFINITE LOOP POLLING FOR EVENTS - NEEDS TO CONTAIN DRAWING CODE
 	for {
+		frameStart = time.Now()
 
 		// POLL FOR EVENTS - LOOK FOR QUIT EVENT
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
@@ -51,13 +44,23 @@ func main() {
 				return
 			}
 		}
-
 		// UPDATE GAME STATE
-		playerPaddle.update(keyState)
-		// UPDATE AMAZING AI
-		aiPaddle.aiUpdate(&ball)
-		// UPDATE BALL
-		ball.update(&playerPaddle, &aiPaddle)
+		if state == play {
+			if playerPaddle.score == maxScore || aiPaddle.score == maxScore {
+				state = paused
+			} else {
+				playerPaddle.update(keyState, elapsedTime)
+				aiPaddle.aiUpdate(&ball)
+				ball.update(&playerPaddle, &aiPaddle, elapsedTime)
+			}
+
+		} else if state == paused {
+			if keyState[sdl.SCANCODE_SPACE] != 0 {
+				playerPaddle.score = 0
+				aiPaddle.score = 0
+				state = play
+			}
+		}
 
 		// CLEAR SCREEN
 		clearScreen(pixels)
@@ -67,9 +70,14 @@ func main() {
 		aiPaddle.draw(pixels)
 		ball.draw(pixels)
 
-		// UPDATE TEXTURE WITH NEW PIXELS ARRAY
-		texture.Update(nil, pixels, screenPitch)
-		renderer.Copy(texture, nil, nil)
-		renderer.Present()
+		drawPixels(pixels, window, renderer, texture)
+
+		elapsedTime = float32(time.Since(frameStart).Seconds()) * 1000.0 // IN MILISECONDS
+
+		// FRAMERATE FIXING
+		if elapsedTime < frameTime {
+			sdl.Delay(uint32(frameTime) - uint32(elapsedTime))
+			elapsedTime = float32(time.Since(frameStart).Seconds()) * 1000.0
+		}
 	}
 }
