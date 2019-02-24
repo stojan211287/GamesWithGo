@@ -10,13 +10,21 @@ func main() {
 
 	// INIT VARS
 	colorWhite := color{255, 255, 255}
+	colorRed := color{255, 0, 0}
+	colorTeal := color{0, 255, 242}
+
+	// FOR THE BACKGROUND
+	frequency := float32(0.015)
+	gain := float32(0.2)
+	lacunarity := float32(10)
+	octaves := 3
 
 	var state gameState = paused
 
 	var frameStart time.Time
 	var elapsedTime float32
 
-	window, renderer, texture := setupSDL()
+	window, renderer, texture := setupSDL(windowTitle)
 	defer sdl.Quit()
 	defer window.Destroy()
 	defer renderer.Destroy()
@@ -62,8 +70,8 @@ func main() {
 			}
 		}
 
-		// CLEAR SCREEN
-		clearScreen(pixels)
+		// DRAW NOISE BACKGROUND
+		makeNoise(pixels, frequency, gain, lacunarity, octaves, colorRed, colorTeal)
 
 		// DRAW BALL AND playerPaddle and aiPaddle
 		playerPaddle.draw(pixels)

@@ -2,13 +2,13 @@ package main
 
 import "github.com/veandco/go-sdl2/sdl"
 
-func setupSDL() (*sdl.Window, *sdl.Renderer, *sdl.Texture) {
+func setupSDL(windowTitle string) (*sdl.Window, *sdl.Renderer, *sdl.Texture) {
 	// INIT THE EVENT SYSTEM
 	err := sdl.Init(sdl.INIT_EVERYTHING)
 	checkError(err)
 
 	// MAKE WINDOW
-	window, err := sdl.CreateWindow("Testin SDL2, FINALLY!", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
+	window, err := sdl.CreateWindow(windowTitle, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
 		int32(winHeight), int32(winWidth), sdl.WINDOW_SHOWN)
 
 	checkError(err)

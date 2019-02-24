@@ -31,6 +31,8 @@ const maxScore int = 3
 const frameRate int = 200 // IN FRAMES PER SECOND
 const frameTime float32 = (1 / 200) * 1000.0
 
+const windowTitle string = "Psychodelic PONG"
+
 // GAME STATES
 type gameState int
 
