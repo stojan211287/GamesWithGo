@@ -1,5 +1,10 @@
 package main
 
+import (
+	"runtime"
+	"sync"
+)
+
 func rescaleAndDraw(rawNoise []float32, minNoise, maxNoise float32, colorGradient []color, pixels []byte) {
 
 	scale := 255.0 / (maxNoise - minNoise)
@@ -55,25 +60,60 @@ func makeNoise(pixels []byte, frequency, gain, lacunarity float32, octaves int) 
 
 	noise := make([]float32, windowHeight*windowWidth)
 
-	i := 0
+	numRoutines := runtime.NumCPU()
+	routineBatchSize := len(noise) / numRoutines
 
 	var minNoise float32
 	var maxNoise float32
 
-	for y := 0; y < windowWidth; y++ {
-		for x := 0; x < windowHeight; x++ {
-			noise[i] = turbulenceNoise(float32(x), float32(y), frequency, lacunarity, gain, octaves)
-			if i == 0 {
-				minNoise = noise[i]
-				maxNoise = noise[i]
-			} else if noise[i] > maxNoise {
-				maxNoise = noise[i]
-			} else if noise[i] < minNoise {
-				minNoise = noise[i]
+	// MAKE WAITGROUP FOR GOROUTINES
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(numRoutines)
+
+	// USE GOROUTINES TO SAMPLE NOISE
+	for i := 0; i < numRoutines; i++ {
+		go func(i int) {
+			defer waitGroup.Done()
+
+			var routineMin float32
+			var routineMax float32
+			var mutex = &sync.Mutex{}
+
+			startIndex := i * routineBatchSize
+			endIndex := startIndex + routineBatchSize - 1
+
+			for j := startIndex; j < endIndex; j++ {
+				x := j % windowWidth
+				y := (j - x) / windowHeight
+				noise[j] = turbulenceNoise(float32(x), float32(y), frequency, lacunarity, gain, octaves)
+
+				if j == 0 {
+					routineMin = noise[j]
+					routineMax = noise[j]
+				}
+				if noise[j] < routineMin {
+					routineMin = noise[j]
+				} else if noise[j] > routineMax {
+					routineMax = noise[j]
+				}
 			}
-			i++
-		}
+
+			// MODIFY GLOBAL MIN AND MAX
+			mutex.Lock()
+			if routineMin < minNoise {
+				minNoise = routineMin
+			}
+			if routineMax > maxNoise {
+				maxNoise = routineMax
+			}
+			mutex.Unlock()
+
+		}(i)
 	}
+
+	// WAIT UNTIL ALL GOROUTINES DONE
+	waitGroup.Wait()
+
 	gradient := getColorGradient(color{255, 0, 0}, color{0, 255, 0})
 	rescaleAndDraw(noise, minNoise, maxNoise, gradient, pixels)
 }
